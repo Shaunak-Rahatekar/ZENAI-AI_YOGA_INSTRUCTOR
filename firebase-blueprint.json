@@ -1,0 +1,73 @@
+/**
+ * Definitions for the ZenAI database.
+ */
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile data including age and physical metrics.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "age": { "type": "integer" },
+        "weight": { "type": "number" },
+        "height": { "type": "number" },
+        "bmi": { "type": "number" },
+        "reminderTime": { "type": "string", "description": "Format HH:mm" },
+        "streakCount": { "type": "integer" },
+        "lastWorkoutDate": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "age", "weight", "height"]
+    },
+    "Workout": {
+      "title": "Yoga Workout",
+      "description": "Suggested yoga session details.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "poses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "duration": { "type": "integer", "description": "seconds" },
+              "instruction": { "type": "string" }
+            }
+          }
+        },
+        "targetLevel": { "type": "string" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "Session": {
+      "title": "Workout Session Log",
+      "description": "Record of a completed yoga session.",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" },
+        "userId": { "type": "string" },
+        "workoutName": { "type": "string" },
+        "completedAt": { "type": "string" },
+        "duration": { "type": "integer" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Information about the user."
+    },
+    "/users/{userId}/sessions/{sessionId}": {
+      "schema": "Session",
+      "description": "History of completed workouts for a specific user."
+    },
+    "/workouts/{workoutId}": {
+      "schema": "Workout",
+      "description": "Public or private yoga workout routines."
+    }
+  }
+}

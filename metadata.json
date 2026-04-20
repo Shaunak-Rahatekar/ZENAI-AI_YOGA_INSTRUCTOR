@@ -1,0 +1,6 @@
+{
+  "name": "ZenAI - AI Yoga Instructor",
+  "description": "Personalized yoga workouts based on your age and BMI, featuring AI-powered live pose tracking, habit streaks, and daily reminders.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": []
+}

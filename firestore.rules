@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    // --- User Profiles ---
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Users shouldn't list all users
+      
+      function isValidUser(data) {
+        return data.age is int && data.age >= 10 && data.age <= 120
+            && data.weight is number && data.weight > 0 && data.weight < 500
+            && data.height is number && data.height > 0 && data.height < 300
+            && (data.streakCount is int && data.streakCount >= 0)
+            && (data.reminderTime is string && data.reminderTime.size() == 5)
+            && (data.lastWorkoutDate == null || data.lastWorkoutDate is string);
+      }
+
+      allow create: if isOwner(userId) && isValidUser(incoming())
+                    && incoming().streakCount == 0;
+      
+      allow update: if isOwner(userId) && isValidUser(incoming())
+                    && (
+                      // Update streak, lastWorkoutDate, bio data and settings
+                      (incoming().diff(existing()).affectedKeys().hasAll(['streakCount', 'lastWorkoutDate', 'bmi'])) || 
+                      (incoming().diff(existing()).affectedKeys().hasOnly(['streakCount', 'lastWorkoutDate', 'bmi', 'age', 'weight', 'height', 'reminderTime']))
+                    );
+      
+      // --- Sessions (Subcollection) ---
+      match /sessions/{sessionId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        
+        function isValidSession(data) {
+          return data.workoutName is string && data.workoutName.size() <= 200
+              && data.completedAt is timestamp && data.completedAt <= request.time
+              && data.duration is int && data.duration >= 0;
+        }
+
+        allow create: if isOwner(userId) && isValidSession(incoming());
+        allow update, delete: if false; // Sessions are immutable logs
+      }
+    }
+
+    // --- Public/System Workouts ---
+    match /workouts/{workoutId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow write: if false; // Only system should create workouts (or via admin in real app)
+    }
+  }
+}
